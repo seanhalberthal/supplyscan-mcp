@@ -33,7 +33,19 @@ func newMultiSourceCache(cacheDir string) (*multiSourceCache, error) {
 }
 
 // getDefaultCacheDir returns the default cache directory path.
+// Priority: SUPPLYSCAN_CACHE_DIR env var > /cache (Docker) > ~/.cache/supplyscan-mcp (native)
 func getDefaultCacheDir() (string, error) {
+	// 1. Check for explicit env var
+	if dir := os.Getenv("SUPPLYSCAN_CACHE_DIR"); dir != "" {
+		return dir, nil
+	}
+
+	// 2. Check if /cache exists (Docker container with tmpfs or volume mount)
+	if info, err := os.Stat("/cache"); err == nil && info.IsDir() {
+		return "/cache", nil
+	}
+
+	// 3. Fall back to user home directory (native binary)
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
