@@ -33,16 +33,24 @@ Being implemented in Go rather than as an npm package makes it immune to npm sup
 
 Install with a single command - no config editing required:
 
+**Ephemeral cache (maximum privacy):**
 ```bash
 claude mcp add supplyscan -s user -- \
   sh -c 'docker run --rm -i --pull always -v "$PWD:/workspace:ro" --tmpfs /cache ghcr.io/seanhalberthal/supplyscan-mcp:latest'
+```
+
+**Persistent cache (faster startup):**
+```bash
+claude mcp add supplyscan -s user -- \
+  sh -c 'docker run --rm -i --pull always -v "$PWD:/workspace:ro" -v supplyscan-cache:/cache ghcr.io/seanhalberthal/supplyscan-mcp:latest'
 ```
 
 This adds supplyscan to your user-level config, available across all projects. Restart Claude Code to activate.
 
 **What this does:**
 - Mounts only your current working directory (read-only)
-- Uses in-memory cache (tmpfs) - nothing persists on your filesystem
+- Ephemeral: uses in-memory cache (tmpfs) - nothing persists on your filesystem
+- Persistent: uses a Docker-managed volume - doesn't touch your home directory
 - Runs as non-root user inside the container
 
 ### Docker (Manual Config)
@@ -97,6 +105,7 @@ The Docker configurations below follow a privacy-first approach:
 
 Add to your MCP config file (`~/.claude.json` for Claude Code, `claude_desktop_config.json` for Claude Desktop):
 
+**Ephemeral cache (maximum privacy):**
 ```json
 {
   "mcpServers": {
@@ -111,12 +120,28 @@ Add to your MCP config file (`~/.claude.json` for Claude Code, `claude_desktop_c
 }
 ```
 
+**Persistent cache (faster startup):**
+```json
+{
+  "mcpServers": {
+    "supplyscan": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "docker run --rm -i --pull always -v \"$PWD:/workspace:ro\" -v supplyscan-cache:/cache ghcr.io/seanhalberthal/supplyscan-mcp:latest"
+      ]
+    }
+  }
+}
+```
+
 The shell wrapper allows `$PWD` to be evaluated at runtime, mounting your current working directory.
 
 ### Cursor / VS Code (Docker)
 
 These IDEs support workspace variables, which makes configuration cleaner:
 
+**Ephemeral cache (maximum privacy):**
 ```json
 {
   "mcpServers": {
@@ -134,15 +159,23 @@ These IDEs support workspace variables, which makes configuration cleaner:
 }
 ```
 
-### Persistent Cache (Optional)
-
-If you prefer to keep the IOC database cached between sessions (faster startup, works offline):
-
+**Persistent cache (faster startup):**
 ```json
-"-v", "supplyscan-cache:/cache"
+{
+  "mcpServers": {
+    "supplyscan": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "--pull", "always",
+        "-v", "${workspaceFolder}:/workspace:ro",
+        "-v", "supplyscan-cache:/cache",
+        "ghcr.io/seanhalberthal/supplyscan-mcp:latest"
+      ]
+    }
+  }
+}
 ```
-
-Replace `--tmpfs /cache` with this named volume. Docker manages the volume - it doesn't touch your home directory.
 
 ### Binary
 
