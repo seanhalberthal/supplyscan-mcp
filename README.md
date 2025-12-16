@@ -33,14 +33,25 @@ Being implemented in Go rather than as an npm package makes it immune to npm sup
 
 Install with a single command - no config editing required:
 
+**Ephemeral cache (maximum privacy):**
 ```bash
 claude mcp add supplyscan -s user -- \
-  docker run --rm -i --pull always \
-  -v "$HOME:$HOME:ro" \
-  ghcr.io/seanhalberthal/supplyscan-mcp:latest
+  sh -c 'docker run --rm -i --pull always -v "$PWD:/workspace:ro" --tmpfs /cache ghcr.io/seanhalberthal/supplyscan-mcp:latest'
+```
+
+**Persistent cache (faster startup):**
+```bash
+claude mcp add supplyscan -s user -- \
+  sh -c 'docker run --rm -i --pull always -v "$PWD:/workspace:ro" -v supplyscan-cache:/cache ghcr.io/seanhalberthal/supplyscan-mcp:latest'
 ```
 
 This adds supplyscan to your user-level config, available across all projects. Restart Claude Code to activate.
+
+**What this does:**
+- Mounts only your current working directory (read-only)
+- Ephemeral: uses in-memory cache (tmpfs) - nothing persists on your filesystem
+- Persistent: uses a Docker-managed volume - doesn't touch your home directory
+- Runs as non-root user inside the container
 
 ### Docker (Manual Config)
 
@@ -83,38 +94,54 @@ curl -L https://github.com/seanhalberthal/supplyscan-mcp/releases/latest/downloa
 
 These manual configurations are alternatives to the [CLI install](#claude-code-cli-recommended) method above.
 
+### Privacy Model
+
+The Docker configurations below follow a privacy-first approach:
+- **Read-only project access**: Only the current project directory is mounted, and as read-only
+- **Ephemeral cache**: Uses tmpfs (in-memory) so nothing persists on your filesystem
+- **Non-root execution**: Container runs as UID 1000, not root
+
 ### Claude Code / Claude Desktop (Docker)
 
 Add to your MCP config file (`~/.claude.json` for Claude Code, `claude_desktop_config.json` for Claude Desktop):
 
+**Ephemeral cache (maximum privacy):**
 ```json
 {
   "mcpServers": {
     "supplyscan": {
-      "command": "docker",
+      "command": "sh",
       "args": [
-        "run", "--rm", "-i",
-        "--pull", "always",
-        "-v", "/Users/you:/Users/you:ro",
-        "ghcr.io/seanhalberthal/supplyscan-mcp:latest"
+        "-c",
+        "docker run --rm -i --pull always -v \"$PWD:/workspace:ro\" --tmpfs /cache ghcr.io/seanhalberthal/supplyscan-mcp:latest"
       ]
     }
   }
 }
 ```
 
-Replace `/Users/you` with your home directory. The volume mount uses the same path inside the container so file paths work seamlessly.
-
-**Restrict access** to a specific folder:
-
+**Persistent cache (faster startup):**
 ```json
-"-v", "/Users/you/projects:/Users/you/projects:ro"
+{
+  "mcpServers": {
+    "supplyscan": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "docker run --rm -i --pull always -v \"$PWD:/workspace:ro\" -v supplyscan-cache:/cache ghcr.io/seanhalberthal/supplyscan-mcp:latest"
+      ]
+    }
+  }
+}
 ```
+
+The shell wrapper allows `$PWD` to be evaluated at runtime, mounting your current working directory.
 
 ### Cursor / VS Code (Docker)
 
-These IDEs support workspace variables, which makes configuration simpler:
+These IDEs support workspace variables, which makes configuration cleaner:
 
+**Ephemeral cache (maximum privacy):**
 ```json
 {
   "mcpServers": {
@@ -123,7 +150,8 @@ These IDEs support workspace variables, which makes configuration simpler:
       "args": [
         "run", "--rm", "-i",
         "--pull", "always",
-        "-v", "${workspaceFolder}:${workspaceFolder}:ro",
+        "-v", "${workspaceFolder}:/workspace:ro",
+        "--tmpfs", "/cache",
         "ghcr.io/seanhalberthal/supplyscan-mcp:latest"
       ]
     }
@@ -131,7 +159,23 @@ These IDEs support workspace variables, which makes configuration simpler:
 }
 ```
 
-The workspace folder is mounted at the same path inside the container, so paths work naturally.
+**Persistent cache (faster startup):**
+```json
+{
+  "mcpServers": {
+    "supplyscan": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "--pull", "always",
+        "-v", "${workspaceFolder}:/workspace:ro",
+        "-v", "supplyscan-cache:/cache",
+        "ghcr.io/seanhalberthal/supplyscan-mcp:latest"
+      ]
+    }
+  }
+}
+```
 
 ### Binary
 
@@ -146,6 +190,8 @@ If using a native binary (built from source or downloaded):
   }
 }
 ```
+
+The binary stores its cache in `~/.cache/supplyscan-mcp/` by default. Override with `SUPPLYSCAN_CACHE_DIR` environment variable.
 
 ## MCP Tools
 
@@ -187,21 +233,25 @@ The MCP server runs via stdio by default, but includes a CLI mode for standalone
 ### Docker
 
 ```bash
-# Scan a directory
-docker run --rm --pull always -v /path/to/project:/scan:ro \
-  ghcr.io/seanhalberthal/supplyscan-mcp:latest --cli scan /scan
+# Scan current directory
+docker run --rm --pull always -v "$PWD:/workspace:ro" --tmpfs /cache \
+  ghcr.io/seanhalberthal/supplyscan-mcp:latest --cli scan /workspace
+
+# Scan a specific directory
+docker run --rm --pull always -v /path/to/project:/workspace:ro --tmpfs /cache \
+  ghcr.io/seanhalberthal/supplyscan-mcp:latest --cli scan /workspace
 
 # Check a specific package
-docker run --rm --pull always ghcr.io/seanhalberthal/supplyscan-mcp:latest \
-  --cli check lodash 4.17.20
+docker run --rm --pull always --tmpfs /cache \
+  ghcr.io/seanhalberthal/supplyscan-mcp:latest --cli check lodash 4.17.20
 
-# Refresh IOC database
-docker run --rm --pull always ghcr.io/seanhalberthal/supplyscan-mcp:latest \
-  --cli refresh
+# Refresh IOC database (ephemeral - for testing)
+docker run --rm --pull always --tmpfs /cache \
+  ghcr.io/seanhalberthal/supplyscan-mcp:latest --cli refresh
 
 # Show status
-docker run --rm --pull always ghcr.io/seanhalberthal/supplyscan-mcp:latest \
-  --cli status
+docker run --rm --pull always --tmpfs /cache \
+  ghcr.io/seanhalberthal/supplyscan-mcp:latest --cli status
 ```
 
 ### Binary

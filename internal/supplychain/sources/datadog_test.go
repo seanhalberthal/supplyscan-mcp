@@ -24,7 +24,7 @@ func TestDataDogSource_CacheTTL(t *testing.T) {
 
 func TestDataDogSource_WithOptions(t *testing.T) {
 	customURL := "https://example.com/iocs.csv"
-	src := NewDataDogSource(WithDataDogURL(customURL))
+	src := NewDataDogSource(withDataDogURL(customURL))
 
 	if src.url != customURL {
 		t.Errorf("url = %q, want %q", src.url, customURL)
@@ -44,7 +44,7 @@ another-bad,3.0.0,socketdev
 	}))
 	defer server.Close()
 
-	src := NewDataDogSource(WithDataDogURL(server.URL))
+	src := NewDataDogSource(withDataDogURL(server.URL))
 	ctx := context.Background()
 
 	data, err := src.Fetch(ctx, server.Client())
@@ -93,7 +93,7 @@ func TestDataDogSource_Fetch_ServerError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	src := NewDataDogSource(WithDataDogURL(server.URL))
+	src := NewDataDogSource(withDataDogURL(server.URL))
 	ctx := context.Background()
 
 	_, err := src.Fetch(ctx, server.Client())
@@ -114,7 +114,7 @@ value1,value2
 	}))
 	defer server.Close()
 
-	src := NewDataDogSource(WithDataDogURL(server.URL))
+	src := NewDataDogSource(withDataDogURL(server.URL))
 	ctx := context.Background()
 
 	_, err := src.Fetch(ctx, server.Client())
@@ -133,7 +133,7 @@ func TestDataDogSource_Fetch_EmptyCSV(t *testing.T) {
 	}))
 	defer server.Close()
 
-	src := NewDataDogSource(WithDataDogURL(server.URL))
+	src := NewDataDogSource(withDataDogURL(server.URL))
 	ctx := context.Background()
 
 	data, err := src.Fetch(ctx, server.Client())
@@ -153,7 +153,7 @@ func TestDataDogSource_Fetch_ContextCancelled(t *testing.T) {
 	}))
 	defer server.Close()
 
-	src := NewDataDogSource(WithDataDogURL(server.URL))
+	src := NewDataDogSource(withDataDogURL(server.URL))
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
@@ -176,7 +176,7 @@ pkg2,"2.0.0,2.0.1",test
 	}))
 	defer server.Close()
 
-	src := NewDataDogSource(WithDataDogURL(server.URL))
+	src := NewDataDogSource(withDataDogURL(server.URL))
 	ctx := context.Background()
 
 	data, err := src.Fetch(ctx, server.Client())

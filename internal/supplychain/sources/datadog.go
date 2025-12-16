@@ -36,8 +36,8 @@ type DataDogSource struct {
 // DataDogSourceOption configures a DataDogSource.
 type DataDogSourceOption func(*DataDogSource)
 
-// WithDataDogURL sets a custom URL for the DataDog source.
-func WithDataDogURL(url string) DataDogSourceOption {
+// withDataDogURL sets a custom URL for the DataDog source.
+func withDataDogURL(url string) DataDogSourceOption {
 	return func(s *DataDogSource) {
 		s.url = url
 	}

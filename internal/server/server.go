@@ -110,12 +110,15 @@ func handleStatus(context.Context, *mcp.ServerSession, *mcp.CallToolParamsFor[st
 
 func handleScan(_ context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[scanInput]) (*mcp.CallToolResultFor[scanOutput], error) {
 	input := params.Arguments
-	if input.Path == "" {
-		return &mcp.CallToolResultFor[scanOutput]{IsError: true}, fmt.Errorf("path is required")
+
+	// Default to /workspace if no path provided (Docker container mount point)
+	path := input.Path
+	if path == "" {
+		path = "/workspace"
 	}
 
 	result, err := scan.Scan(scanner.ScanOptions{
-		Path:       input.Path,
+		Path:       path,
 		Recursive:  input.Recursive,
 		IncludeDev: input.IncludeDev,
 	})

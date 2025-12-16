@@ -115,25 +115,27 @@ func TestHandleScan_ValidPath(t *testing.T) {
 	}
 }
 
-func TestHandleScan_EmptyPath(t *testing.T) {
+func TestHandleScan_DefaultsToWorkspace(t *testing.T) {
 	setupTestScanner(t)
 
 	params := &mcp.CallToolParamsFor[scanInput]{
 		Arguments: scanInput{
-			Path: "",
+			Path: "", // Empty path should default to /workspace
 		},
 	}
 
 	result, err := handleScan(context.Background(), nil, params)
 
+	// Should error because /workspace doesn't exist, but NOT because "path is required"
 	if err == nil {
-		t.Error("handleScan() expected error for empty path")
+		t.Skip("Skipping: /workspace exists on this system")
 	}
 	if result == nil || !result.IsError {
-		t.Error("handleScan() expected IsError = true for empty path")
+		t.Error("handleScan() expected IsError = true for missing /workspace")
 	}
-	if err.Error() != "path is required" {
-		t.Errorf("Error message = %q, want %q", err.Error(), "path is required")
+	// The error should be about /workspace not existing, not about path being required
+	if err.Error() == "path is required" {
+		t.Error("handleScan() should default to /workspace, not require path")
 	}
 }
 
