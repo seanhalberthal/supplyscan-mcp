@@ -89,11 +89,12 @@ func TestHandleScan_ValidPath(t *testing.T) {
 		}`,
 	})
 
+	includeDev := true
 	params := &mcp.CallToolParamsFor[scanInput]{
 		Arguments: scanInput{
 			Path:       projectDir,
 			Recursive:  false,
-			IncludeDev: true,
+			IncludeDev: &includeDev,
 		},
 	}
 
@@ -349,10 +350,11 @@ func TestHandleRefresh_Force(t *testing.T) {
 // TestInputTypes verifies the input structs are properly structured.
 func TestInputTypes(t *testing.T) {
 	// Verify scanInput fields
+	includeDev := true
 	si := scanInput{
 		Path:       "/test",
 		Recursive:  true,
-		IncludeDev: true,
+		IncludeDev: &includeDev,
 	}
 	if si.Path != "/test" {
 		t.Errorf("scanInput.Path = %q, want /test", si.Path)
