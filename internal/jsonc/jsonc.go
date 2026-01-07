@@ -7,7 +7,7 @@ import (
 
 // StripComments removes JavaScript-style comments and trailing commas from JSONC content.
 // Handles both single-line (//) and multi-line (/* */) comments.
-// Also removes trailing commas before ] and } which are valid in JSONC but not JSON.
+// Also removes trailing commas (commas followed only by whitespace before ] or }) which are valid in JSONC but not JSON.
 // Preserves strings that contain comment-like sequences.
 func StripComments(data []byte) []byte {
 	p := &jsoncParser{data: data, result: &bytes.Buffer{}}

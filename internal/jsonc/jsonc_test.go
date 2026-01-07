@@ -426,6 +426,16 @@ func TestStripComments_TrailingCommas(t *testing.T) {
 			input: `{"a": {"b": 1}, "c": 2,}`,
 			want:  `{"a": {"b": 1}, "c": 2}`,
 		},
+		{
+			name:  "escaped quote in string with trailing comma",
+			input: `{"key": "value with \" quote",}`,
+			want:  `{"key": "value with \" quote"}`,
+		},
+		{
+			name:  "malformed JSON - trailing comma without closing bracket",
+			input: `{"key": "value",`,
+			want:  `{"key": "value",`,
+		},
 	}
 
 	for _, tt := range tests {
